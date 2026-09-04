@@ -10,7 +10,8 @@
     "migrate": "prisma migrate dev",
     "studio": "prisma studio",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,11 +20,13 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "^7.10.0",
+    "argon2": "^0.45.1",
     "dotenv": "^17.4.2",
     "pg": "^8.23.0"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "prisma": "7.10.0"
+    "prisma": "7.10.0",
+    "tsx": "^4.23.13"
   }
 }
