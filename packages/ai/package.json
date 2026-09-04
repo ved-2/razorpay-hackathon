@@ -1,0 +1,24 @@
+{
+  "name": "@commerceos/ai",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@commerceos/database": "workspace:*",
+    "@commerceos/domain": "workspace:*",
+    "@langchain/core": "^0.3.40",
+    "@langchain/langgraph": "^0.2.53",
+    "groq-sdk": "^0.15.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "vitest": "^5.0.0"
+  }
+}

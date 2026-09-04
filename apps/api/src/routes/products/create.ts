@@ -24,11 +24,7 @@ export async function createProductRoute(app: FastifyInstance) {
         });
       }
 
-      const { merchantId } = request.user as {
-        userId: string;
-        merchantId: string;
-        role: string;
-      };
+      const { merchantId } = request.user;
 
       const product = await prisma.product.create({
         data: {

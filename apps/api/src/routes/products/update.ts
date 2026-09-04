@@ -25,11 +25,7 @@ export async function updateProductRoute(app: FastifyInstance) {
         });
       }
 
-      const { merchantId } = request.user as {
-        userId: string;
-        merchantId: string;
-        role: string;
-      };
+      const { merchantId } = request.user;
 
       const { id } = request.params as {
         id: string;

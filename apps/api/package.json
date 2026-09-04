@@ -3,21 +3,31 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @commerceos/database build && tsx watch src/server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@commerceos/ai": "workspace:*",
     "@commerceos/database": "workspace:*",
+    "@commerceos/domain": "workspace:*",
+    "@commerceos/events": "workspace:*",
+    "@commerceos/payments": "workspace:*",
+    "@commerceos/policy": "workspace:*",
+    "@fastify/cors": "^11.3.0",
     "@fastify/jwt": "^10.2.2",
     "argon2": "^0.45.1",
     "dotenv": "^17.4.2",
     "fastify": "^5.12.1",
     "fastify-plugin": "^6.0.0",
+    "fastify-raw-body": "^6.0.1",
+    "razorpay": "^2.9.8",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.13",
+    "vitest": "^5.0.0"
   }
 }

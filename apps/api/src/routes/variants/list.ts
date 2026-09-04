@@ -9,11 +9,7 @@ export async function listVariantsRoute(app: FastifyInstance) {
       preHandler: authenticate,
     },
     async (request, reply) => {
-      const { merchantId } = request.user as {
-        userId: string;
-        merchantId: string;
-        role: string;
-      };
+      const { merchantId } = request.user;
 
       const { productId } = request.params as {
         productId: string;

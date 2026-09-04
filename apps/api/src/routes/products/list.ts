@@ -9,11 +9,7 @@ export async function listProductsRoute(app: FastifyInstance) {
       preHandler: authenticate,
     },
     async (request) => {
-      const { merchantId } = request.user as {
-        userId: string;
-        merchantId: string;
-        role: string;
-      };
+      const { merchantId } = request.user;
 
       const products = await prisma.product.findMany({
         where: {

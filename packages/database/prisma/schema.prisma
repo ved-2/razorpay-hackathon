@@ -27,17 +27,20 @@ model User {
 
   @@index([merchantId])
 }
-
 model Merchant {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
-  slug        String     @unique
+  slug        String      @unique
 
   users       User[]
   products    Product[]
+  customers   Customer[]
+  orders      Order[]
+  approvals   Approval[]
+  auditEvents AuditEvent[]
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Product {
@@ -74,6 +77,7 @@ model ProductVariant {
   currency    String       @default("INR")
 
   inventory   Inventory?
+  orderItems  OrderItem[]
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -91,4 +95,186 @@ model Inventory {
 
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  FULFILLED
+}
+
+enum PaymentStatus {
+  CREATED
+  PROCESSING
+  VERIFICATION_PENDING
+  VERIFIED
+  FAILED
+}
+
+model Customer {
+  id          String      @id @default(cuid())
+  merchantId  String
+  merchant    Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  name        String
+  email       String
+  phone       String?
+
+  orders      Order[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([merchantId])
+  @@index([merchantId, email])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  merchantId      String
+  merchant        Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+
+  status          OrderStatus   @default(PENDING_PAYMENT)
+
+  currency        String        @default("INR")
+  subtotal        Int
+  discount        Int           @default(0)
+  total           Int
+
+  items           OrderItem[]
+  payments        Payment[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([merchantId])
+  @@index([customerId])
+  @@index([merchantId, status])
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  variantId   String
+  variant     ProductVariant  @relation(fields: [variantId], references: [id])
+
+  productName String
+  variantName String
+  sku         String
+
+  quantity    Int
+  unitPrice   Int
+  totalPrice  Int
+
+  createdAt   DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model Payment {
+  id                String         @id @default(cuid())
+  orderId           String
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider          String
+  providerOrderId   String?
+  providerPaymentId String?
+
+  amount            Int
+  currency          String         @default("INR")
+  status            PaymentStatus  @default(CREATED)
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([providerOrderId])
+  @@index([providerPaymentId])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  event       String
+
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, event])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Approval {
+  id              String         @id @default(cuid())
+  merchantId      String
+  merchant        Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  type            String
+  status          ApprovalStatus @default(PENDING)
+
+  title           String
+  reason          String
+
+  proposal        Json
+  opportunityId   String?
+
+  executedAt      DateTime?
+  executionResult Json?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([merchantId])
+  @@index([merchantId, status])
+}
+
+enum AuditAction {
+  MERCHANT_CREATED
+  PRODUCT_CREATED
+  ORDER_CREATED
+  PAYMENT_CREATED
+  PAYMENT_VERIFIED
+  PAYMENT_FAILED
+  WEBHOOK_RECEIVED
+  AI_PROPOSAL_CREATED
+  POLICY_CHECKED
+  APPROVAL_CREATED
+  APPROVAL_APPROVED
+  APPROVAL_REJECTED
+  ACTION_EXECUTED
+}
+
+model AuditEvent {
+  id          String      @id @default(cuid())
+  merchantId  String
+  merchant    Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  actorType   String      // "USER" | "AI_AGENT" | "WEBHOOK" | "SYSTEM"
+  actorId     String?
+
+  action      AuditAction
+  entity      String
+  entityId    String?
+
+  metadata    Json?
+
+  createdAt   DateTime    @default(now())
+
+  @@index([merchantId])
+  @@index([merchantId, action])
+  @@index([merchantId, entity, entityId])
 }
