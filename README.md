@@ -494,8 +494,7 @@ Make sure you have:
 ## 1. Clone the repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd commerceos
+git clone (https://github.com/ved-2/razorpay-hackathon.git)
 ```
 
 ## 2. Install dependencies
