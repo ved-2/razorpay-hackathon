@@ -7,8 +7,17 @@ import { eventBus } from "@commerceos/events";
 import { recordAuditEvent } from "../../services/audit";
 
 const buyerCheckoutSchema = z.object({
-  variantId: z.string().min(1),
+  variantId: z.string().min(1).optional(),
   quantity: z.number().int().positive().default(1),
+  items: z
+    .array(
+      z.object({
+        variantId: z.string().min(1),
+        quantity: z.number().int().positive().default(1),
+      })
+    )
+    .optional(),
+  requireApproval: z.boolean().default(false),
   customer: z.object({
     name: z.string().min(1),
     email: z.string().email(),
@@ -33,52 +42,101 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
       });
     }
 
-    const { variantId, quantity, customer, policy } = parsed.data;
+    const { variantId, quantity, items, requireApproval, customer, policy } = parsed.data;
+
+    // 1. Normalize cart items
+    const cartItems =
+      items && items.length > 0
+        ? items
+        : variantId
+        ? [{ variantId, quantity: quantity || 1 }]
+        : [];
+
+    if (cartItems.length === 0) {
+      return reply.status(400).send({
+        error: "At least one product variant must be specified for checkout",
+      });
+    }
 
     try {
-      // 1. Fetch variant and inventory
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: variantId },
+      // 2. Fetch all requested variants and inventories
+      const variantIds = cartItems.map((item) => item.variantId);
+      const variants = await prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
         include: {
           product: true,
           inventory: true,
         },
       });
 
-      if (!variant) {
+      if (variants.length !== variantIds.length) {
         return reply.status(404).send({
-          error: "Product variant not found",
+          error: "One or more requested product variants were not found",
         });
       }
 
-      if (variant.product.status !== "ACTIVE") {
+      // Check merchant and active status
+      const merchantId = variants[0].product.merchantId;
+      for (const v of variants) {
+        if (v.product.status !== "ACTIVE") {
+          return reply.status(400).send({
+            error: `Product ${v.product.name} is not active for purchase`,
+          });
+        }
+      }
+
+      // 3. Verify stock availability and prepare item lines
+      let orderSubtotal = 0;
+      const orderItemsData: Array<{
+        variantId: string;
+        productName: string;
+        variantName: string;
+        sku: string;
+        quantity: number;
+        unitPrice: number;
+        totalPrice: number;
+      }> = [];
+
+      for (const cartItem of cartItems) {
+        const variant = variants.find((v) => v.id === cartItem.variantId);
+        if (!variant) continue;
+
+        const availableStock =
+          (variant.inventory?.quantity ?? 0) - (variant.inventory?.reserved ?? 0);
+
+        if (availableStock < cartItem.quantity) {
+          return reply.status(400).send({
+            error: `Insufficient inventory for ${variant.product.name} (${variant.name}). Available: ${availableStock}, Requested: ${cartItem.quantity}`,
+          });
+        }
+
+        const lineTotal = variant.price * cartItem.quantity;
+        orderSubtotal += lineTotal;
+
+        orderItemsData.push({
+          variantId: variant.id,
+          productName: variant.product.name,
+          variantName: variant.name,
+          sku: variant.sku,
+          quantity: cartItem.quantity,
+          unitPrice: variant.price,
+          totalPrice: lineTotal,
+        });
+      }
+
+      const orderTotal = orderSubtotal;
+
+      // 4. Enforce buyer budget policy over total basket
+      if (policy?.maxPrice && orderTotal > policy.maxPrice) {
         return reply.status(400).send({
-          error: "Product is not available for purchase",
+          error: `Order total ₹${(orderTotal / 100).toFixed(2)} exceeds buyer maximum budget ₹${(
+            policy.maxPrice / 100
+          ).toFixed(2)}`,
         });
       }
 
-      const availableStock =
-        (variant.inventory?.quantity ?? 0) - (variant.inventory?.reserved ?? 0);
-
-      if (availableStock < quantity) {
-        return reply.status(400).send({
-          error: `Insufficient inventory for ${variant.name}. Available: ${availableStock}`,
-        });
-      }
-
-      const totalPrice = variant.price * quantity;
-
-      // 2. Enforce buyer budget policy
-      if (policy?.maxPrice && totalPrice > policy.maxPrice) {
-        return reply.status(400).send({
-          error: `Order total ₹${(totalPrice / 100).toFixed(2)} exceeds buyer maximum budget ₹${(policy.maxPrice / 100).toFixed(2)}`,
-        });
-      }
-
-      const merchantId = variant.product.merchantId;
-
-      // 3. Transactionally reserve inventory and create order
-      const order = await prisma.$transaction(async (tx) => {
+      // 5. Transactionally reserve inventory, create order, and create pending approval if requested
+      const { order, approval } = await prisma.$transaction(async (tx) => {
         const existingCustomer = await tx.customer.findFirst({
           where: {
             merchantId,
@@ -97,27 +155,18 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
             },
           }));
 
+        // Create Order with all items
         const createdOrder = await tx.order.create({
           data: {
             merchantId,
             customerId: savedCustomer.id,
             status: "PENDING_PAYMENT",
-            currency: variant.currency,
-            subtotal: totalPrice,
+            currency: variants[0].currency || "INR",
+            subtotal: orderSubtotal,
             discount: 0,
-            total: totalPrice,
+            total: orderTotal,
             items: {
-              create: [
-                {
-                  variantId: variant.id,
-                  productName: variant.product.name,
-                  variantName: variant.name,
-                  sku: variant.sku,
-                  quantity,
-                  unitPrice: variant.price,
-                  totalPrice,
-                },
-              ],
+              create: orderItemsData,
             },
           },
           include: {
@@ -126,28 +175,68 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
           },
         });
 
-        const updatedInventory = await tx.inventory.updateMany({
-          where: {
-            variantId: variant.id,
-            quantity: {
-              gte: quantity,
+        // Atomically reserve inventory for each variant
+        for (const item of cartItems) {
+          const updateResult = await tx.inventory.updateMany({
+            where: {
+              variantId: item.variantId,
+              quantity: {
+                gte: item.quantity,
+              },
             },
-          },
-          data: {
-            reserved: {
-              increment: quantity,
+            data: {
+              reserved: {
+                increment: item.quantity,
+              },
             },
-          },
-        });
+          });
 
-        if (updatedInventory.count !== 1) {
-          throw new Error("Failed to reserve inventory for checkout");
+          if (updateResult.count !== 1) {
+            throw new Error(`Failed to reserve inventory for variant ${item.variantId}`);
+          }
         }
 
-        return createdOrder;
+        // Create Human-in-the-Loop Approval record if requested
+        let createdApproval = null;
+        if (requireApproval) {
+          const itemsSummary = orderItemsData
+            .map((i) => `${i.productName} (${i.variantName}) x${i.quantity}`)
+            .join(", ");
+
+          createdApproval = await tx.approval.create({
+            data: {
+              merchantId,
+              type: "AUTONOMOUS_BUYER_ORDER",
+              status: "PENDING",
+              title: `Autonomous Purchase: ${orderItemsData.length} items (₹${(
+                orderTotal / 100
+              ).toLocaleString("en-IN")})`,
+              reason: `Autonomous voice buyer requested checkout for: ${itemsSummary}. Total payable: ₹${(
+                orderTotal / 100
+              ).toLocaleString("en-IN")}. Human-in-the-loop authorization required.`,
+              opportunityId: null,
+              proposal: {
+                action: "AUTONOMOUS_BUYER_ORDER",
+                orderId: createdOrder.id,
+                total: orderTotal,
+                items: orderItemsData,
+                customer: {
+                  name: customer.name,
+                  email: customer.email,
+                },
+                confidence: 0.98,
+                expectedImpact: `Direct revenue generation of ₹${(
+                  orderTotal / 100
+                ).toLocaleString("en-IN")} across ${orderItemsData.length} items.`,
+              },
+            },
+          });
+        }
+
+        return { order: createdOrder, approval: createdApproval };
       });
 
-      // 4. Generate Razorpay payment order via paymentProvider
+      // 6. Generate Razorpay payment order
       let rzpOrder;
       try {
         rzpOrder = await paymentProvider.createOrder({
@@ -158,31 +247,37 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
             commerceosOrderId: order.id,
             merchantId: order.merchantId,
             buyerChannel: "AI_BUYER",
+            itemCount: String(orderItemsData.length),
+            approvalRequired: String(requireApproval),
           },
         });
       } catch (gatewayError) {
-        // Roll back reserved inventory and cancel pending order
-        await prisma.$transaction([
-          prisma.order.update({
+        // Roll back reserved inventory and cancel order
+        await prisma.$transaction(async (tx) => {
+          await tx.order.update({
             where: { id: order.id },
             data: { status: "CANCELLED" },
-          }),
-          prisma.inventory.update({
-            where: { variantId: variant.id },
-            data: {
-              reserved: {
-                decrement: quantity,
+          });
+          for (const item of cartItems) {
+            await tx.inventory.update({
+              where: { variantId: item.variantId },
+              data: {
+                reserved: {
+                  decrement: item.quantity,
+                },
               },
-            },
-          }),
-        ]);
+            });
+          }
+        });
 
         throw new Error(
-          `Payment gateway failure: ${gatewayError instanceof Error ? gatewayError.message : "Unable to initiate payment"}`
+          `Payment gateway failure: ${
+            gatewayError instanceof Error ? gatewayError.message : "Unable to initiate payment"
+          }`
         );
       }
 
-      // 5. Store payment record
+      // 7. Store payment record
       const payment = await prisma.payment.create({
         data: {
           orderId: order.id,
@@ -194,11 +289,12 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
         },
       });
 
-      // 6. Publish event and record audit
+      // 8. Publish events and record audit
       await eventBus.publish("order.created", merchantId, {
         orderId: order.id,
         total: order.total,
         channel: "AI_BUYER",
+        itemCount: orderItemsData.length,
       });
 
       await recordAuditEvent({
@@ -210,9 +306,26 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
         metadata: {
           channel: "AI_BUYER",
           total: order.total,
+          itemCount: orderItemsData.length,
           paymentId: payment.id,
+          approvalId: approval?.id || null,
         },
       });
+
+      if (approval) {
+        await recordAuditEvent({
+          merchantId,
+          actorType: "AI_AGENT",
+          action: "APPROVAL_CREATED",
+          entity: "Approval",
+          entityId: approval.id,
+          metadata: {
+            type: "AUTONOMOUS_BUYER_ORDER",
+            orderId: order.id,
+            total: order.total,
+          },
+        });
+      }
 
       return reply.status(201).send({
         success: true,
@@ -221,6 +334,7 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
           status: order.status,
           currency: order.currency,
           total: order.total,
+          itemCount: orderItemsData.length,
         },
         payment: {
           id: payment.id,
@@ -231,6 +345,14 @@ export async function buyerCheckoutRoute(app: FastifyInstance) {
           status: payment.status,
           razorpayKeyId: env.RAZORPAY_KEY_ID,
         },
+        approval: approval
+          ? {
+              id: approval.id,
+              status: approval.status,
+              title: approval.title,
+            }
+          : null,
+        approvalRequired: Boolean(approval),
       });
     } catch (error) {
       request.log.error(error);

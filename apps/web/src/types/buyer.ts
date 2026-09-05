@@ -41,4 +41,10 @@ export interface BuyerCheckoutResponse {
     status: string;
     razorpayKeyId: string;
   };
+  approvalRequired?: boolean;
+  approval?: {
+    id: string;
+    status: string;
+    title: string;
+  } | null;
 }

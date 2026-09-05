@@ -21,6 +21,7 @@ const btnToggleMute = document.getElementById("btnToggleMute");
 const micIcon = document.getElementById("micIcon");
 const micToggleText = document.getElementById("micToggleText");
 const voiceStatusText = document.getElementById("voiceStatusText");
+const soundwaveContainer = document.getElementById("soundwaveContainer");
 
 const transcriptInput = document.getElementById("transcriptInput");
 const interimDisplay = document.getElementById("interimDisplay");
@@ -35,10 +36,15 @@ const productPrice = document.getElementById("productPrice");
 const productStock = document.getElementById("productStock");
 const btnQuickCheckout = document.getElementById("btnQuickCheckout");
 
-// In-Stock Options Elements
+// In-Stock Options & Cart Elements
 const optionsSection = document.getElementById("optionsSection");
 const optionsCount = document.getElementById("optionsCount");
 const optionsList = document.getElementById("optionsList");
+const cartSummaryBar = document.getElementById("cartSummaryBar");
+const cartCountBadge = document.getElementById("cartCountBadge");
+const cartTotalAmount = document.getElementById("cartTotalAmount");
+const cartItemsPills = document.getElementById("cartItemsPills");
+const btnClearCart = document.getElementById("btnClearCart");
 
 // Analysis & Checkout Elements
 const analysisSection = document.getElementById("analysisSection");
@@ -46,10 +52,14 @@ const decisionCard = document.getElementById("decisionCard");
 const decisionBadge = document.getElementById("decisionBadge");
 const confidenceScore = document.getElementById("confidenceScore");
 const decisionReason = document.getElementById("decisionReason");
+const chkRequireApproval = document.getElementById("chkRequireApproval");
 const btnExecuteCheckout = document.getElementById("btnExecuteCheckout");
+const btnExecuteTotal = document.getElementById("btnExecuteTotal");
 
 // Receipt & Payment Elements
 const receiptSection = document.getElementById("receiptSection");
+const pendingApprovalAlert = document.getElementById("pendingApprovalAlert");
+const btnOpenApprovalsQueue = document.getElementById("btnOpenApprovalsQueue");
 const receiptItemName = document.getElementById("receiptItemName");
 const receiptOrderId = document.getElementById("receiptOrderId");
 const receiptAmount = document.getElementById("receiptAmount");
@@ -57,6 +67,9 @@ const receiptRzpId = document.getElementById("receiptRzpId");
 const btnOpenPayment = document.getElementById("btnOpenPayment");
 const btnInstantSettle = document.getElementById("btnInstantSettle");
 const btnViewInDashboard = document.getElementById("btnViewInDashboard");
+
+let cartItems = [];
+let availableOptions = [];
 
 // 1. Initialize Auth & State
 function checkAuthStatus() {
@@ -207,8 +220,9 @@ function unmuteAndRecord() {
 
   btnToggleMute.classList.remove("muted");
   btnToggleMute.classList.add("unmuted");
+  if (soundwaveContainer) soundwaveContainer.classList.remove("hidden");
   micIcon.innerText = "🔇";
-  micToggleText.innerText = "Mute (Finished Speaking)";
+  micToggleText.innerText = "Mute (Finished)";
   voiceStatusBadge.innerText = "● Listening";
   voiceStatusBadge.className = "status-pill active";
   voiceStatusText.innerText = "Listening live... Speak your condition. Click Mute when finished.";
@@ -223,6 +237,7 @@ function muteAndStop(autoTriggerAi = true) {
 
   btnToggleMute.classList.remove("unmuted");
   btnToggleMute.classList.add("muted");
+  if (soundwaveContainer) soundwaveContainer.classList.add("hidden");
   micIcon.innerText = "🎙️";
   micToggleText.innerText = "Unmute (Speak Condition)";
   voiceStatusBadge.innerText = "Muted";
@@ -314,45 +329,79 @@ async function triggerAiEvaluation(voiceCommand) {
     const data = await response.json();
 
     if (data.options && data.options.length > 0) {
+      availableOptions = data.options;
       optionsSection.classList.remove("hidden");
       optionsCount.innerText = `${data.options.length} in stock`;
       optionsList.innerHTML = "";
 
-      data.options.forEach((opt, idx) => {
-        const card = document.createElement("div");
-        card.className = idx === 0 ? "option-card selected" : "option-card";
-        card.innerHTML = `
-          <div class="option-top">
-            <span class="option-name">${opt.fullName}</span>
-            <span class="option-price">₹${(opt.price / 100).toFixed(0)}</span>
-          </div>
-          <div class="option-bottom">
-            <span class="option-meta">SKU: ${opt.sku} • In Stock: ${opt.availableStock}</span>
-            <span class="option-reason">${opt.matchReason || "In stock"}</span>
-          </div>
-        `;
-
-        card.onclick = () => {
-          document.querySelectorAll(".option-card").forEach((c) => c.classList.remove("selected"));
-          card.classList.add("selected");
-          selectProductOption(opt);
-        };
-
-        optionsList.appendChild(card);
+      // Group options by intentGroup
+      const groups = {};
+      data.options.forEach((opt) => {
+        const grp = opt.intentGroup || "Matching In-Stock Items";
+        if (!groups[grp]) groups[grp] = [];
+        groups[grp].push(opt);
       });
 
-      // Default select top pick
-      const topPick = data.options[0];
-      selectProductOption(topPick);
+      // Default select recommended items into cart
+      if (data.recommendedVariants && data.recommendedVariants.length > 0) {
+        cartItems = [...data.recommendedVariants];
+      } else {
+        cartItems = [data.options[0]];
+      }
+
+      // Render grouped option cards
+      Object.keys(groups).forEach((grpTitle) => {
+        const groupHeader = document.createElement("div");
+        groupHeader.className = "options-group-header";
+        groupHeader.innerHTML = `<span>${grpTitle}</span>`;
+        optionsList.appendChild(groupHeader);
+
+        groups[grpTitle].forEach((opt) => {
+          const card = document.createElement("div");
+          card.id = `opt_${opt.variantId}`;
+          card.className = cartItems.some((i) => i.variantId === opt.variantId)
+            ? "option-card selected"
+            : "option-card";
+
+          card.innerHTML = `
+            <div class="option-check-wrap">
+              <span class="custom-checkbox"></span>
+            </div>
+            <div class="option-info-wrap">
+              <div class="option-top">
+                <span class="option-name">${opt.fullName}</span>
+                <span class="option-price">₹${(opt.price / 100).toFixed(0)}</span>
+              </div>
+              <div class="option-bottom">
+                <span class="option-meta">SKU: ${opt.sku} • In Stock: ${opt.availableStock}</span>
+                <span class="option-reason">${opt.matchReason || "In stock"}</span>
+              </div>
+            </div>
+          `;
+
+          card.onclick = () => {
+            toggleCartItem(opt);
+          };
+
+          optionsList.appendChild(card);
+        });
+      });
+
+      // Update Cart Bar and summary
+      updateCartUI();
 
       // Render AI Evaluation Card
       analysisSection.classList.remove("hidden");
       decisionCard.className = "decision-card buy";
       decisionBadge.innerText = "BUY APPROVED";
       confidenceScore.innerText = "96% Confidence";
-      decisionReason.innerText = data.aiSummary || `In-stock option "${topPick.fullName}" matches your criteria.`;
-      btnExecuteCheckout.disabled = false;
-      voiceStatusText.innerText = `Selected "${topPick.productName}". Click Checkout below or pick another option.`;
+      decisionReason.innerText =
+        data.aiSummary ||
+        `Found ${cartItems.length} matching items meeting your criteria with total ₹${(
+          data.combinedTotalPaise / 100
+        ).toLocaleString("en-IN")}.`;
+
+      voiceStatusText.innerText = `${cartItems.length} items pre-selected in cart. Review & execute below.`;
     } else {
       voiceStatusText.innerText = "No in-stock items found under that criteria. Showing default product.";
     }
@@ -362,39 +411,112 @@ async function triggerAiEvaluation(voiceCommand) {
   }
 }
 
-function selectProductOption(opt) {
-  currentProduct = {
-    title: opt.fullName,
-    price: opt.price,
-    currency: opt.currency || "INR",
-    sku: opt.sku,
-    description: opt.description,
-    variantId: opt.variantId,
-    availableStock: opt.availableStock,
-  };
-  setProduct(currentProduct);
-  decisionReason.innerText = `Selected: "${opt.fullName}" • Price: ₹${(opt.price / 100).toFixed(0)} • Stock Available: ${opt.availableStock} units.`;
+function toggleCartItem(opt) {
+  const index = cartItems.findIndex((i) => i.variantId === opt.variantId);
+  if (index >= 0) {
+    cartItems.splice(index, 1);
+  } else {
+    cartItems.push(opt);
+  }
+  updateCartUI();
 }
 
-// 5. Checkout Handlers
-// 1-Click Buy for user "who just sees the product and then checkout"
-if (btnQuickCheckout) {
-  btnQuickCheckout.addEventListener("click", () => {
-    executeCheckout(currentProduct);
+function updateCartUI() {
+  // Update card styling
+  availableOptions.forEach((opt) => {
+    const card = document.getElementById(`opt_${opt.variantId}`);
+    if (card) {
+      const isSelected = cartItems.some((i) => i.variantId === opt.variantId);
+      if (isSelected) {
+        card.classList.add("selected");
+      } else {
+        card.classList.remove("selected");
+      }
+    }
+  });
+
+  const cartTotal = cartItems.reduce((sum, i) => sum + i.price, 0);
+
+  if (cartItems.length > 0) {
+    if (cartSummaryBar) cartSummaryBar.classList.remove("hidden");
+    if (cartCountBadge)
+      cartCountBadge.innerText = `${cartItems.length} ${
+        cartItems.length === 1 ? "item" : "items"
+      }`;
+    if (cartTotalAmount)
+      cartTotalAmount.innerText = `₹${(cartTotal / 100).toLocaleString("en-IN")}`;
+    if (btnExecuteTotal)
+      btnExecuteTotal.innerText = `₹${(cartTotal / 100).toLocaleString("en-IN")}`;
+
+    // Render pills
+    if (cartItemsPills) {
+      cartItemsPills.classList.remove("hidden");
+      cartItemsPills.innerHTML = "";
+      cartItems.forEach((item) => {
+        const pill = document.createElement("div");
+        pill.className = "cart-item-pill";
+        pill.innerHTML = `
+          <span class="pill-name">${item.productName}</span>
+          <span class="pill-price">₹${(item.price / 100).toFixed(0)}</span>
+          <button class="btn-remove-pill" title="Remove">✕</button>
+        `;
+        pill.querySelector(".btn-remove-pill").onclick = (e) => {
+          e.stopPropagation();
+          toggleCartItem(item);
+        };
+        cartItemsPills.appendChild(pill);
+      });
+    }
+
+    btnExecuteCheckout.disabled = false;
+    currentProduct = {
+      title: cartItems.map((i) => i.productName).join(" + "),
+      price: cartTotal,
+      currency: "INR",
+      sku: cartItems.map((i) => i.sku).join(", "),
+      description: `${cartItems.length} items in autonomous buyer cart`,
+      variantId: cartItems[0].variantId,
+      availableStock: Math.min(...cartItems.map((i) => i.availableStock || 35)),
+    };
+    setProduct(currentProduct);
+  } else {
+    if (cartSummaryBar) cartSummaryBar.classList.add("hidden");
+    if (cartItemsPills) cartItemsPills.classList.add("hidden");
+    if (btnExecuteTotal) btnExecuteTotal.innerText = "₹0";
+    btnExecuteCheckout.disabled = true;
+  }
+}
+
+// Reset Cart
+if (btnClearCart) {
+  btnClearCart.addEventListener("click", () => {
+    cartItems = [];
+    updateCartUI();
+    voiceStatusText.innerText = "Cart emptied. Select in-stock items above to purchase.";
   });
 }
 
-// Autonomous Checkout for voice-evaluated items
+// 5. Checkout Handlers
+// 1-Click Buy for user "who just sees the active product and then checkout"
+if (btnQuickCheckout) {
+  btnQuickCheckout.addEventListener("click", () => {
+    executeCheckout([currentProduct]);
+  });
+}
+
+// Autonomous Checkout for multi-item cart
 btnExecuteCheckout.addEventListener("click", () => {
-  executeCheckout(currentProduct);
+  executeCheckout(cartItems.length > 0 ? cartItems : [currentProduct]);
 });
 
-async function executeCheckout(targetProduct) {
-  const product = targetProduct || currentProduct;
-  if (!product) return;
+async function executeCheckout(targetItems) {
+  const itemsToBuy = targetItems && targetItems.length > 0 ? targetItems : [currentProduct];
+  if (!itemsToBuy || itemsToBuy.length === 0) return;
+
+  const requireApproval = chkRequireApproval ? chkRequireApproval.checked : false;
 
   btnExecuteCheckout.disabled = true;
-  btnExecuteCheckout.innerText = "⚡ Reserving Stock & Creating Checkout...";
+  btnExecuteCheckout.innerText = "⚡ Reserving Stock & Creating Order...";
   if (btnQuickCheckout) {
     btnQuickCheckout.disabled = true;
     btnQuickCheckout.innerText = "⚡ Reserving Stock...";
@@ -405,15 +527,18 @@ async function executeCheckout(targetProduct) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        variantId: product.variantId || "var_cs_blk_09",
-        quantity: 1,
+        items: itemsToBuy.map((item) => ({
+          variantId: item.variantId || "var_cs_blk_09",
+          quantity: 1,
+        })),
+        requireApproval,
         customer: {
           name: "Autonomous Voice Buyer",
           email: "voice-agent@commerceos.ai",
           phone: "+919999911111",
         },
         policy: {
-          maxPrice: 1000000,
+          maxPrice: 10000000,
           currency: "INR",
         },
       }),
@@ -432,14 +557,36 @@ async function executeCheckout(targetProduct) {
       return;
     }
 
-    const { order, payment } = data;
+    const { order, payment, approvalRequired, approval } = data;
 
     // Render receipt
     analysisSection.classList.add("hidden");
     if (optionsSection) optionsSection.classList.add("hidden");
     receiptSection.classList.remove("hidden");
 
-    if (receiptItemName) receiptItemName.innerText = product.title || product.fullName || "Selected Product";
+    // Human-in-the-Loop Alert Banner
+    if (approvalRequired && approval) {
+      if (pendingApprovalAlert) {
+        pendingApprovalAlert.classList.remove("hidden");
+      }
+      if (btnOpenApprovalsQueue) {
+        btnOpenApprovalsQueue.onclick = () => {
+          chrome.tabs.create({ url: `${WEB_BASE}/approvals` });
+        };
+      }
+    } else {
+      if (pendingApprovalAlert) {
+        pendingApprovalAlert.classList.add("hidden");
+      }
+    }
+
+    const itemTitles = itemsToBuy.map((i) => i.productName || i.title).join(" + ");
+    if (receiptItemName) {
+      receiptItemName.innerText = `${itemTitles} (${itemsToBuy.length} ${
+        itemsToBuy.length === 1 ? "item" : "items"
+      })`;
+    }
+
     receiptOrderId.innerText = `#${order.id.slice(-8)}`;
     receiptAmount.innerText = new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -489,8 +636,10 @@ async function executeCheckout(targetProduct) {
       chrome.tabs.create({ url: `${WEB_BASE}/orders/${order.id}` });
     };
 
-    // Auto-open checkout portal in new tab
-    chrome.tabs.create({ url: checkoutUrl });
+    // Auto-open checkout portal in new tab if direct checkout
+    if (!approvalRequired) {
+      chrome.tabs.create({ url: checkoutUrl });
+    }
   } catch (err) {
     alert("Checkout error: " + err.message);
     btnExecuteCheckout.disabled = false;

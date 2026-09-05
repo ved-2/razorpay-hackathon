@@ -119,6 +119,25 @@ export async function executeApprovalAction(
         break;
       }
 
+      case "AUTONOMOUS_BUYER_ORDER": {
+        const orderId = (proposal as any)?.orderId;
+        if (orderId) {
+          await tx.order.updateMany({
+            where: { id: orderId, merchantId },
+            data: {
+              status: "PENDING_PAYMENT",
+            },
+          });
+        }
+        details = {
+          orderId,
+          total: (proposal as any)?.total,
+          authorizedByMerchant: true,
+          authorizedAt: executedAt.toISOString(),
+        };
+        break;
+      }
+
       default: {
         throw new Error(`Unsupported action type: ${approval.type}`);
       }

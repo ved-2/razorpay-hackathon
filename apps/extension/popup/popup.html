@@ -5,46 +5,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CommerceOS AI Buyer</title>
   <link rel="stylesheet" href="popup.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="extension-container">
-    <!-- Header -->
+    <!-- Header HUD -->
     <header class="header">
       <div class="logo-wrap">
-        <div class="status-dot online"></div>
-        <span class="brand-title">CommerceOS</span>
-        <span class="badge ai-badge">AI Buyer</span>
+        <div class="brand-badge-group">
+          <div class="status-dot online">
+            <span class="pulse-ring"></span>
+          </div>
+          <span class="brand-title">CommerceOS</span>
+          <span class="badge ai-badge">
+            <span class="sparkle-icon">✦</span> AI BUYER
+          </span>
+        </div>
       </div>
 
       <div id="authHeader" class="auth-header">
-        <button id="btnConnect" class="btn-connect">Connect Account</button>
+        <button id="btnConnect" class="btn-connect">Connect Store</button>
         <div id="userProfile" class="user-profile hidden">
-          <span id="merchantName" class="merchant-name">Apex Athletics</span>
+          <div class="profile-pill">
+            <span class="profile-dot"></span>
+            <span id="merchantName" class="merchant-name">Apex Athletics</span>
+          </div>
           <button id="btnLogout" class="btn-logout" title="Sign Out">✕</button>
         </div>
       </div>
     </header>
 
+    <!-- Sub-Header Engine Status Strip -->
+    <div class="engine-strip">
+      <div class="engine-stat">
+        <span class="engine-dot-green"></span>
+        <span class="engine-label">GROQ LPU REASONER</span>
+      </div>
+      <div class="engine-stat">
+        <span class="engine-tag">LATENCY 138ms</span>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <main class="main-content">
       <!-- 1. Voice / Mic Control Section -->
-      <section class="voice-section">
+      <section class="glass-card voice-section">
         <div class="voice-header-row">
           <div class="voice-title-wrap">
             <span class="section-title">Voice Condition</span>
             <span id="voiceStatusBadge" class="status-pill muted">Muted</span>
           </div>
           <button id="btnGrantMic" class="btn-ghost-sm hidden" title="Grant microphone permission in browser">
-            🎙️ Enable Mic Access
+            🎙️ Enable Mic
           </button>
         </div>
 
-        <!-- Mute / Unmute Button -->
+        <!-- Mute / Unmute Button & Soundwave Equalizer -->
         <div class="mic-toggle-container">
           <button id="btnToggleMute" class="btn-mute-toggle muted" title="Toggle microphone">
-            <span id="micIcon" class="mic-toggle-icon">🎙️</span>
-            <span id="micToggleText" class="mic-toggle-text">Unmute (Speak Condition)</span>
+            <div class="mic-btn-content">
+              <span id="micIcon" class="mic-toggle-icon">🎙️</span>
+              <span id="micToggleText" class="mic-toggle-text">Unmute (Speak Condition)</span>
+            </div>
+
+            <!-- Dynamic Audio Soundwave Visualizer Bars -->
+            <div id="soundwaveContainer" class="soundwave-container hidden">
+              <span class="bar bar-1"></span>
+              <span class="bar bar-2"></span>
+              <span class="bar bar-3"></span>
+              <span class="bar bar-4"></span>
+              <span class="bar bar-5"></span>
+              <span class="bar bar-6"></span>
+              <span class="bar bar-7"></span>
+            </div>
           </button>
+
           <div id="voiceStatusText" class="voice-status-text">
             Speak your condition (e.g., "Shoes under 4000"). Click Mute when finished.
           </div>
@@ -53,13 +90,13 @@
         <!-- Live Voice Transcript Box -->
         <div class="transcript-wrapper">
           <div class="transcript-header">
-            <span class="transcript-label">Spoken Condition</span>
+            <span class="transcript-label">Spoken Directive</span>
             <button id="btnClearTranscript" class="btn-clear-text" title="Clear transcript">Clear</button>
           </div>
           <textarea
             id="transcriptInput"
             class="transcript-textarea"
-            placeholder='State your requirement, e.g. "Buy runners under ₹4,000" or "Socks under ₹1,000"...'
+            placeholder='State your criteria, e.g. "Buy runners under ₹4,000" or "Socks under ₹1,000"...'
             rows="2"
           ></textarea>
           <div id="interimDisplay" class="interim-text"></div>
@@ -67,111 +104,167 @@
 
         <!-- Process Initiation Button -->
         <button id="btnStartProcess" class="btn-primary-action w-full" disabled>
-          ⚡ Find Matching In-Stock Options
+          <span class="btn-icon">⚡</span> Find Matching In-Stock Options
         </button>
 
         <!-- Quick Voice Intent Chips -->
         <div class="voice-chips">
-          <button class="chip" data-command="Running shoes under ₹4,000">"Runners under ₹4,000"</button>
-          <button class="chip" data-command="Performance socks under ₹1,000">"Socks under ₹1,000"</button>
-          <button class="chip" data-command="Water bottle under ₹1,500">"Bottle under ₹1,500"</button>
+          <button class="chip chip-multi" data-command="Shoes under 4000 and socks under 1000">👟 Shoes &lt; ₹4K + 🧦 Socks &lt; ₹1K</button>
+          <button class="chip" data-command="Running shoes under ₹4,000">👟 Runners &lt; ₹4K</button>
+          <button class="chip" data-command="Performance socks under ₹1,000">🧦 Socks &lt; ₹1K</button>
+          <button class="chip" data-command="Water bottle under ₹1,500">🍶 Bottle &lt; ₹1.5K</button>
         </div>
       </section>
 
-      <!-- 2. Detected / Active Product Card (with complete details) -->
-      <section class="product-section">
-        <div class="section-title flex justify-between items-center">
-          <span>Active Product Detail</span>
+      <!-- 2. Detected / Active Product Card -->
+      <section class="glass-card product-section">
+        <div class="section-title-row">
+          <span class="section-title">Active Product Details</span>
           <span id="productStock" class="stock-tag">● In Stock (35 available)</span>
         </div>
-        <div id="productCard" class="product-card">
+        <div id="productCard" class="product-card-inner">
           <div class="product-info">
-            <h3 id="productTitle" class="product-title">CloudStrider Carbon Runner (Stealth Black / UK 9)</h3>
+            <h3 id="productTitle" class="product-title">CloudStrider Carbon Runner</h3>
             <p id="productDesc" class="product-desc">Next-generation ultralight carbon-plated marathon road racing shoe.</p>
-            <div class="product-meta mt-2">
+            <div class="product-meta-row">
               <span id="productSku" class="sku-tag">CS-BLK-09</span>
               <span id="productPrice" class="price-tag">₹3,499.00</span>
             </div>
           </div>
-          <button id="btnQuickCheckout" class="btn-primary w-full mt-3">
-            ⚡ Buy Active Item (1-Click Checkout)
+          <button id="btnQuickCheckout" class="btn-glow-primary w-full mt-3">
+            <span class="btn-icon">⚡</span> Buy Active Item (1-Click Checkout)
           </button>
         </div>
       </section>
 
-      <!-- 3. Multiple In-Stock Options (Matching user condition) -->
-      <section id="optionsSection" class="options-section hidden">
+      <!-- 3. Multiple In-Stock Options & Multi-Item Cart -->
+      <section id="optionsSection" class="glass-card options-section hidden">
         <div class="options-header">
-          <span class="section-title">In-Stock Options Matching Condition</span>
-          <span id="optionsCount" class="options-count">5 Available</span>
+          <div class="options-title-group">
+            <span class="section-title">Matching In-Stock Options</span>
+            <span class="options-subtitle">Select items to build a unified cart</span>
+          </div>
+          <span id="optionsCount" class="options-count-badge">0 Available</span>
         </div>
+
+        <!-- Live Multi-Item Cart Bar -->
+        <div id="cartSummaryBar" class="cart-summary-bar hidden">
+          <div class="cart-summary-left">
+            <span class="cart-icon">🛒</span>
+            <span id="cartCountBadge" class="cart-count">0 items</span>
+            <span class="cart-divider">•</span>
+            <span id="cartTotalAmount" class="cart-total">₹0</span>
+          </div>
+          <button id="btnClearCart" class="btn-clear-cart" title="Clear all selections">Reset</button>
+        </div>
+
+        <!-- Selected item pills -->
+        <div id="cartItemsPills" class="cart-items-pills hidden"></div>
+
         <div id="optionsList" class="options-list">
           <!-- Populated dynamically via /buyer/options -->
         </div>
       </section>
 
       <!-- 4. AI Analysis Result Card -->
-      <section id="analysisSection" class="analysis-section hidden">
-        <div class="section-title">Groq LLM Buyer Analysis</div>
+      <section id="analysisSection" class="glass-card analysis-section hidden">
+        <div class="section-title-row">
+          <span class="section-title">Groq LLM Buyer Analysis</span>
+          <span class="live-ai-chip">NEURAL REASONER</span>
+        </div>
         <div id="decisionCard" class="decision-card buy">
           <div class="decision-header">
             <span id="decisionBadge" class="decision-badge">BUY APPROVED</span>
             <span id="confidenceScore" class="confidence-score">96% Confidence</span>
           </div>
           <p id="decisionReason" class="decision-reason">
-            Evaluating product against your condition and inventory policies...
+            Evaluating products against your condition and inventory policies...
           </p>
         </div>
 
-        <button id="btnExecuteCheckout" class="btn-primary w-full mt-2">
-          ⚡ Execute Autonomous Checkout
+        <!-- Human-in-the-Loop (HITL) Guardrail Checkbox -->
+        <div class="approval-toggle-box mt-3">
+          <label class="approval-toggle-label" for="chkRequireApproval">
+            <input type="checkbox" id="chkRequireApproval" class="approval-checkbox">
+            <div class="approval-text-wrap">
+              <span class="approval-title">🛡️ Require Human-in-the-Loop Approval</span>
+              <span class="approval-desc">Route order to Merchant Approvals Queue before payment</span>
+            </div>
+          </label>
+        </div>
+
+        <button id="btnExecuteCheckout" class="btn-glow-accent w-full mt-3">
+          <span class="btn-icon">⚡</span> Execute Autonomous Checkout (<span id="btnExecuteTotal">₹0</span>)
         </button>
       </section>
 
       <!-- 5. Checkout Ready & Payment Section -->
-      <section id="receiptSection" class="receipt-section hidden">
+      <section id="receiptSection" class="glass-card receipt-section hidden">
         <div class="receipt-card">
-          <div class="receipt-icon">💳</div>
+          <div class="receipt-icon-wrap">
+            <div class="receipt-icon">💳</div>
+          </div>
           <div class="receipt-title">Checkout Option Created!</div>
-          <p class="receipt-subtitle">Inventory reserved. Choose payment option below:</p>
-          <div class="receipt-details">
+          <p class="receipt-subtitle">Inventory reserved securely for all items. Settle payment below:</p>
+
+          <!-- Pending Human Approval Banner if HITL enabled -->
+          <div id="pendingApprovalAlert" class="approval-alert-card hidden">
+            <div class="approval-alert-header">
+              <span class="approval-alert-badge">⏳ AWAITING HUMAN APPROVAL</span>
+            </div>
+            <p class="approval-alert-desc">
+              This autonomous purchase was held for merchant review. You can approve it in the Dashboard Approvals Queue:
+            </p>
+            <button id="btnOpenApprovalsQueue" class="btn-approvals-link">
+              Open Approvals Queue in Dashboard →
+            </button>
+          </div>
+          
+          <div class="receipt-voucher">
             <div class="receipt-row">
-              <span>Selected Item:</span>
-              <strong id="receiptItemName" class="text-right">CloudStrider Carbon Runner</strong>
+              <span class="receipt-key">Target Items</span>
+              <strong id="receiptItemName" class="receipt-val text-right">CloudStrider Runner</strong>
             </div>
             <div class="receipt-row">
-              <span>Order ID:</span>
-              <strong id="receiptOrderId" class="font-mono">#ord_...</strong>
+              <span class="receipt-key">CommerceOS ID</span>
+              <strong id="receiptOrderId" class="receipt-val font-mono">#ord_...</strong>
             </div>
             <div class="receipt-row">
-              <span>Total Due:</span>
-              <strong id="receiptAmount">₹3,499.00</strong>
+              <span class="receipt-key">Total Due</span>
+              <strong id="receiptAmount" class="receipt-val price-highlight">₹3,499.00</strong>
             </div>
             <div class="receipt-row">
-              <span>Razorpay Order:</span>
-              <strong id="receiptRzpId" class="font-mono">order_...</strong>
+              <span class="receipt-key">Razorpay Order</span>
+              <strong id="receiptRzpId" class="receipt-val font-mono">order_...</strong>
             </div>
             <div class="receipt-row">
-              <span>Status:</span>
-              <strong style="color: #34d399;">Stock Reserved</strong>
+              <span class="receipt-key">Inventory</span>
+              <strong class="receipt-val stock-reserved-pill">● Reserved</strong>
             </div>
           </div>
-          <button id="btnOpenPayment" class="btn-primary w-full mt-2">
-            💳 Pay with Razorpay Checkout
-          </button>
-          <button id="btnInstantSettle" class="btn-secondary w-full mt-2" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
-            ⚡ Instant Settle (Demo)
-          </button>
-          <button id="btnViewInDashboard" class="btn-secondary w-full mt-2">
-            View Order in CommerceOS
-          </button>
+
+          <div class="payment-action-stack">
+            <button id="btnOpenPayment" class="btn-glow-primary w-full">
+              💳 Pay with Razorpay Checkout
+            </button>
+            <button id="btnInstantSettle" class="btn-instant-settle w-full">
+              ⚡ Instant Settle (Demo Autonomous)
+            </button>
+            <button id="btnViewInDashboard" class="btn-ghost w-full">
+              View Order in Dashboard →
+            </button>
+          </div>
         </div>
       </section>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer HUD -->
     <footer class="footer">
-      <span>Powered by Groq LPUs & Razorpay</span>
+      <div class="footer-content">
+        <span>Powered by <strong>Groq LPUs</strong> & <strong>Razorpay</strong></span>
+        <span class="footer-dot">•</span>
+        <span class="footer-version">v2.4 Core</span>
+      </div>
     </footer>
   </div>
 

@@ -1,5 +1,5 @@
 import { ApprovalStatus } from "@/types/approvals";
-import { CheckCircle2, Clock, XCircle, PackagePlus, Tag, Layers, HelpCircle } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, PackagePlus, Tag, Layers, HelpCircle, Bot } from "lucide-react";
 
 interface ApprovalStatusBadgeProps {
   status: ApprovalStatus;
@@ -90,6 +90,15 @@ export function ActionTypeBadge({ type, size = "md" }: ActionTypeBadgeProps) {
         >
           <Layers className="h-3.5 w-3.5" />
           Product Bundle
+        </span>
+      );
+    case "AUTONOMOUS_BUYER_ORDER":
+      return (
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 ${sizeClasses}`}
+        >
+          <Bot className="h-3.5 w-3.5" />
+          Autonomous Buyer Order
         </span>
       );
     default:

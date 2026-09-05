@@ -17,36 +17,36 @@ export function OrderStatusBadge({
     case "PAID":
       return (
         <span
-          className={`inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold ${sizeClasses}`}
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Paid
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          Paid & Settled
         </span>
       );
     case "PENDING_PAYMENT":
       return (
         <span
-          className={`inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-semibold ${sizeClasses}`}
         >
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3.5 w-3.5 text-amber-600" />
           Pending Payment
         </span>
       );
     case "CANCELLED":
       return (
         <span
-          className={`inline-flex items-center gap-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold ${sizeClasses}`}
         >
-          <XCircle className="h-3.5 w-3.5" />
+          <XCircle className="h-3.5 w-3.5 text-rose-600" />
           Cancelled
         </span>
       );
     case "FULFILLED":
       return (
         <span
-          className={`inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 ${sizeClasses}`}
+          className={`inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold ${sizeClasses}`}
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
           Fulfilled
         </span>
       );

@@ -245,22 +245,24 @@ function CheckoutContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-6 space-y-3">
-        <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
-        <p className="text-sm text-slate-400">Loading checkout option...</p>
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-3">
+        <RefreshCw className="h-7 w-7 animate-spin text-slate-600" />
+        <p className="text-xs font-medium text-slate-500">Preparing secure checkout option...</p>
       </div>
     );
   }
 
   if (errorMessage && !order) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-6 space-y-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-6 text-center space-y-3">
-          <AlertCircle className="h-10 w-10 text-rose-500 mx-auto" />
-          <h2 className="text-lg font-semibold text-slate-100">Checkout Error</h2>
-          <p className="text-sm text-slate-400">{errorMessage}</p>
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="max-w-md w-full bg-white border border-slate-200 rounded-xl p-6 text-center space-y-3 shadow-xs">
+          <AlertCircle className="h-9 w-9 text-rose-600 mx-auto" />
+          <h2 className="text-base font-bold text-slate-900">Checkout Error</h2>
+          <p className="text-xs text-slate-600">{errorMessage}</p>
           <Link href="/" className="inline-block mt-2">
-            <Button variant="outline" size="sm">Back to Store</Button>
+            <Button variant="outline" size="sm" className="rounded-lg border-slate-200">
+              Return to Store
+            </Button>
           </Link>
         </div>
       </div>
@@ -269,12 +271,14 @@ function CheckoutContent() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-6 space-y-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-6 text-center space-y-3">
-          <h2 className="text-lg font-semibold">No Order ID Provided</h2>
-          <p className="text-sm text-slate-400">Please provide an order ID to proceed with checkout.</p>
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="max-w-md w-full bg-white border border-slate-200 rounded-xl p-6 text-center space-y-3 shadow-xs">
+          <h2 className="text-base font-bold text-slate-900">No Order ID Provided</h2>
+          <p className="text-xs text-slate-500">Please provide an order ID to proceed with checkout.</p>
           <Link href="/" className="inline-block mt-2">
-            <Button variant="outline" size="sm">Go to Store</Button>
+            <Button variant="outline" size="sm" className="rounded-lg border-slate-200">
+              Go to Store
+            </Button>
           </Link>
         </div>
       </div>
@@ -284,77 +288,82 @@ function CheckoutContent() {
   const isPaid = order.status === "PAID";
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-xl space-y-6">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-lg space-y-5">
         {/* Top Branding Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-slate-950 text-white font-bold flex items-center justify-center text-sm shadow-xs">
               C
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight text-white">CommerceOS</h1>
-              <p className="text-[11px] text-slate-400">Autonomous Agentic Commerce Checkout</p>
+              <h1 className="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+                CommerceOS
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                  CHECKOUT
+                </span>
+              </h1>
+              <p className="text-[11px] text-slate-500">Autonomous Agentic Commerce Settlement</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-            <Lock className="h-3.5 w-3.5" />
-            <span>Razorpay Secured</span>
+          <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-semibold">
+            <Lock className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Razorpay 256-bit Secured</span>
           </div>
         </div>
 
         {/* Status Alerts */}
         {successMessage && (
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs font-medium text-emerald-400 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 flex items-center gap-2.5">
+            <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {errorMessage && (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-medium text-rose-400 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800 flex items-center gap-2.5">
+            <AlertCircle className="h-4.5 w-4.5 shrink-0 text-rose-600" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* Main Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
           {/* Order Header */}
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[11px] font-mono text-slate-400">
-                Order #{order.id.slice(-8)}
+                Order #{order.id.slice(-8).toUpperCase()}
               </span>
-              <h2 className="text-lg font-bold text-white mt-0.5">
-                {isPaid ? "Order Completed & Settled" : "Checkout Option Prepared"}
+              <h2 className="text-lg font-bold text-slate-900 mt-0.5">
+                {isPaid ? "Payment Completed & Verified" : "Checkout Summary"}
               </h2>
             </div>
 
             <span
-              className={`text-xs font-bold px-3 py-1 rounded-full ${
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                 isPaid
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-amber-50 text-amber-800 border border-amber-200"
               }`}
             >
-              {isPaid ? "✓ PAID & SETTLED" : "AWAITING PAYMENT"}
+              {isPaid ? "✓ Paid & Settled" : "Awaiting Settlement"}
             </span>
           </div>
 
           {/* Itemized list */}
-          <div className="divide-y divide-slate-800 border-y border-slate-800 py-2">
+          <div className="divide-y divide-slate-100 border-y border-slate-100 py-2">
             {order.items.map((item) => (
               <div key={item.id} className="py-3 flex items-center justify-between text-xs">
                 <div className="space-y-0.5">
-                  <p className="font-semibold text-slate-200">{item.productName}</p>
-                  <p className="text-slate-400">
-                    {item.variantName} • <span className="font-mono">{item.sku}</span>
+                  <p className="font-semibold text-slate-900">{item.productName}</p>
+                  <p className="text-slate-500">
+                    {item.variantName} • <span className="font-mono text-slate-700">{item.sku}</span>
                   </p>
-                  <p className="text-slate-400 text-[11px]">Quantity: {item.quantity}</p>
+                  <p className="text-slate-400 text-[11px]">Qty: {item.quantity}</p>
                 </div>
-                <div className="font-mono font-bold text-sm text-slate-100">
+                <div className="font-mono font-bold text-sm text-slate-900 tabular-nums">
                   {formatCurrency(item.totalPrice, order.currency)}
                 </div>
               </div>
@@ -362,20 +371,20 @@ function CheckoutContent() {
           </div>
 
           {/* Totals Breakdown */}
-          <div className="space-y-1.5 text-xs text-slate-400">
+          <div className="space-y-1.5 text-xs text-slate-500">
             <div className="flex justify-between">
               <span>Customer:</span>
-              <span className="text-slate-200">{order.customer?.name || "Autonomous Buyer"}</span>
+              <span className="text-slate-800 font-medium">{order.customer?.name || "Autonomous Buyer"}</span>
             </div>
             {payment?.providerOrderId && (
-              <div className="flex justify-between font-mono">
-                <span>Razorpay Order:</span>
-                <span className="text-blue-400">{payment.providerOrderId}</span>
+              <div className="flex justify-between font-mono text-[11px]">
+                <span>Razorpay Order ID:</span>
+                <span className="text-blue-700 font-medium">{payment.providerOrderId}</span>
               </div>
             )}
-            <div className="flex justify-between pt-2 border-t border-slate-800 text-sm font-bold text-white">
-              <span>Total Due:</span>
-              <span className="text-emerald-400 font-mono text-base">
+            <div className="flex justify-between pt-2.5 border-t border-slate-100 text-sm font-bold text-slate-900 items-baseline">
+              <span className="text-slate-700">Total Amount:</span>
+              <span className="text-slate-950 font-mono text-xl font-bold tracking-tight tabular-nums">
                 {formatCurrency(order.total, order.currency)}
               </span>
             </div>
@@ -383,46 +392,46 @@ function CheckoutContent() {
 
           {/* Action Area */}
           {!isPaid ? (
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2.5 pt-2">
               <Button
                 onClick={handleLaunchRazorpay}
                 disabled={isPaying}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-sm rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                className="w-full bg-[#0C2340] hover:bg-[#071526] text-white font-bold py-3 text-sm rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <CreditCard className="h-4 w-4" />
-                {isPaying ? "Opening Razorpay..." : "💳 Pay with Razorpay Checkout"}
+                {isPaying ? "Opening Razorpay..." : "Pay with Razorpay Checkout"}
               </Button>
 
               <Button
                 variant="outline"
                 onClick={handleInstantSettle}
                 disabled={isPaying}
-                className="w-full border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 text-xs py-2.5 rounded-xl font-semibold"
+                className="w-full border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs py-2.5 rounded-xl font-semibold cursor-pointer transition-colors"
               >
-                ⚡ Instant Autonomous Settle (Demo)
+                ⚡ Instant Autonomous Settle (Demo Mode)
               </Button>
             </div>
           ) : (
             <div className="space-y-3 pt-2">
-              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center space-y-1">
-                <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto" />
-                <p className="text-xs font-bold text-emerald-300">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
+                <p className="text-xs font-bold text-emerald-800">
                   Cryptographic Payment Verified
                 </p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-600">
                   Inventory was atomically decremented and audit logs are recorded.
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <Link href={`/orders/${order.id}`} className="flex-1">
-                  <Button variant="outline" className="w-full text-xs">
-                    View in Merchant Dashboard
+                  <Button variant="outline" className="w-full text-xs rounded-lg border-slate-200 text-slate-700">
+                    View in Dashboard
                   </Button>
                 </Link>
                 <Link href="/" className="flex-1">
-                  <Button className="w-full text-xs bg-blue-600 hover:bg-blue-500 text-white">
-                    Return to Home
+                  <Button className="w-full text-xs rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold">
+                    Return to Store
                   </Button>
                 </Link>
               </div>
@@ -431,8 +440,8 @@ function CheckoutContent() {
         </div>
 
         {/* Footer info */}
-        <p className="text-center text-[11px] text-slate-500">
-          CommerceOS • Real-Time Agentic Commerce Operating System for Razorpay
+        <p className="text-center text-[11px] text-slate-400 font-medium">
+          CommerceOS • Real-Time Autonomous Commerce for Razorpay
         </p>
       </div>
     </div>

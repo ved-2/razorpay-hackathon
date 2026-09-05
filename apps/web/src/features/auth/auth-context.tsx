@@ -14,6 +14,7 @@ import {
   RegisterPayload,
 } from "@/types/auth";
 import {
+  DEMO_CREDENTIALS,
   getCurrentUser,
   getToken,
   loginUser,
@@ -28,6 +29,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginAsDemo: () => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
@@ -42,8 +44,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshSession = useCallback(async () => {
-    const savedToken = getToken();
+    let savedToken = getToken();
     if (!savedToken) {
+      const isExplicitLogout =
+        typeof window !== "undefined" &&
+        sessionStorage.getItem("commerceos_logged_out") === "true";
+
+      if (!isExplicitLogout) {
+        try {
+          const res = await loginUser(DEMO_CREDENTIALS);
+          setUser(res.user);
+          setMerchant(res.merchant);
+          setTokenState(res.token);
+          setIsLoading(false);
+          return;
+        } catch (err) {
+          console.warn("Auto demo login failed:", err);
+        }
+      }
+
       setUser(null);
       setMerchant(null);
       setTokenState(null);
@@ -88,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
     try {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("commerceos_logged_out");
+      }
       const response = await loginUser(credentials);
       setUser(response.user);
       setMerchant(response.merchant);
@@ -97,9 +119,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginAsDemo = async () => {
+    await login(DEMO_CREDENTIALS);
+  };
+
   const register = async (payload: RegisterPayload) => {
     setIsLoading(true);
     try {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("commerceos_logged_out");
+      }
       const response = await registerUser(payload);
       setUser(response.user);
       setMerchant(response.merchant);
@@ -110,6 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("commerceos_logged_out", "true");
+    }
     removeToken();
     setUser(null);
     setMerchant(null);
@@ -123,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: Boolean(token && user),
     login,
+    loginAsDemo,
     register,
     logout,
     refreshSession,

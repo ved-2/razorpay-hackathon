@@ -162,47 +162,47 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50/70 text-slate-900 px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            CommerceOS Control Center
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1 text-xs font-semibold text-slate-700 shadow-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            CommerceOS Operations Hub
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {isExtensionCallback
               ? "Link Chrome Extension"
-              : "Sign in to your store"}
+              : "Merchant Command Access"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {isExtensionCallback
-              ? "Authenticate to grant autonomous buying authority to the Chrome Extension."
-              : "Enter your merchant credentials to access autonomous operations."}
+              ? "Authenticate to grant autonomous buying authority to your Chrome Extension."
+              : "Sign in with your merchant credentials to orchestrate autonomous commerce."}
           </p>
         </div>
 
         {/* Login Form Card */}
-        <Card className="border-border/60 shadow-sm">
+        <Card className="border border-slate-200/90 bg-white shadow-xs rounded-2xl overflow-hidden">
           <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle>Merchant Login</CardTitle>
-              <CardDescription>
-                Authenticate with your email and password.
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-5">
+              <CardTitle className="text-sm font-bold text-slate-900">Merchant Credentials</CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Enter your registered store owner credentials.
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-5">
               {error && (
-                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label
                   htmlFor="email"
-                  className="text-xs font-medium text-foreground"
+                  className="text-xs font-medium text-slate-700"
                 >
                   Email Address
                 </label>
@@ -215,13 +215,14 @@ function LoginForm() {
                   required
                   autoComplete="email"
                   disabled={isSubmitting}
+                  className="h-9 rounded-lg border-slate-200 bg-white text-slate-900 text-xs"
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label
                   htmlFor="password"
-                  className="text-xs font-medium text-foreground"
+                  className="text-xs font-medium text-slate-700"
                 >
                   Password
                 </label>
@@ -234,28 +235,29 @@ function LoginForm() {
                   required
                   autoComplete="current-password"
                   disabled={isSubmitting}
+                  className="h-9 rounded-lg border-slate-200 bg-white text-slate-900 text-xs"
                 />
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col gap-3">
+            <CardFooter className="flex flex-col gap-3 p-5 pt-0">
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-9 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold shadow-xs cursor-pointer text-xs"
                 disabled={isSubmitting}
               >
                 {isSubmitting
                   ? "Authenticating..."
                   : isExtensionCallback
                   ? "Authorize & Link Extension"
-                  : "Sign In"}
+                  : "Sign In to Control Center"}
               </Button>
 
-              <div className="text-center text-xs text-muted-foreground">
-                Don&apos;t have a merchant account?{" "}
+              <div className="text-center text-xs text-slate-500">
+                Need to register a store?{" "}
                 <Link
                   href="/register"
-                  className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                  className="font-semibold text-slate-900 hover:underline"
                 >
                   Register Store
                 </Link>
@@ -265,18 +267,18 @@ function LoginForm() {
         </Card>
 
         {/* Demo Credentials Helper for Judges / Testers */}
-        <div className="rounded-xl border border-dashed border-border/80 bg-background/60 p-4 text-xs space-y-2">
-          <div className="flex items-center justify-between font-medium text-foreground">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs space-y-2 shadow-xs">
+          <div className="flex items-center justify-between font-semibold text-slate-800">
             <span>Demo Store Credentials:</span>
             <button
               type="button"
               onClick={handleQuickFillDemo}
-              className="text-primary hover:underline cursor-pointer font-medium"
+              className="text-blue-700 hover:underline cursor-pointer font-semibold text-xs"
             >
               Fill Demo Info
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-muted-foreground font-mono text-[11px]">
+          <div className="grid grid-cols-2 gap-2 text-slate-600 font-mono text-[11px]">
             <div>Email: demo@commerceos.io</div>
             <div>Password: password123</div>
           </div>

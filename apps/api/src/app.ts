@@ -41,8 +41,20 @@ export function buildApp() {
     logger: false,
   });
   app.register(cors, {
-  origin: "http://localhost:3000",
-});
+    origin: (origin, cb) => {
+      // Allow requests with no origin (e.g. curl, mobile apps, server-to-server)
+      if (!origin) return cb(null, true);
+      // Allow localhost or 127.0.0.1 on any port, or Chrome extensions
+      if (
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+        origin.startsWith("chrome-extension://")
+      ) {
+        return cb(null, true);
+      }
+      return cb(null, true);
+    },
+    credentials: true,
+  });
   app.register(rawBody, {
   field: "rawBody",
   global: false,

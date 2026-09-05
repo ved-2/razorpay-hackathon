@@ -45,9 +45,17 @@ export function hasToken(): boolean {
   return Boolean(getToken());
 }
 
+export const DEMO_CREDENTIALS: LoginCredentials = {
+  email: "demo@commerceos.io",
+  password: "password123",
+};
+
 export async function loginUser(
   credentials: LoginCredentials
 ): Promise<AuthResponse> {
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem("commerceos_logged_out");
+  }
   const response = await api.post<AuthResponse>("/auth/login", credentials);
   if (response.token) {
     setToken(response.token);
