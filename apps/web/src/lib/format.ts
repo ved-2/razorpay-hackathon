@@ -25,6 +25,8 @@ export function formatDate(dateInput: string | Date | number): string {
   }).format(date);
 }
 
+export const formatDateTime = formatDate;
+
 export function formatRelativeTime(dateInput: string | Date | number): string {
   const date = new Date(dateInput);
   const now = new Date();

@@ -6,6 +6,8 @@ const navigation = [
   { name: "Orders", href: "/orders" },
   { name: "Revenue", href: "/revenue" },
   { name: "Approvals", href: "/approvals" },
+  { name: "Audit Trail", href: "/audit" },
+  { name: "AI Buyer Demo", href: "/buyer" },
 ];
 
 export function Sidebar() {

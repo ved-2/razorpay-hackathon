@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CommerceOS AI Buyer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="extension-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-wrap">
+        <div class="status-dot online"></div>
+        <span class="brand-title">CommerceOS</span>
+        <span class="badge ai-badge">AI Buyer</span>
+      </div>
+
+      <div id="authHeader" class="auth-header">
+        <button id="btnConnect" class="btn-connect">Connect Account</button>
+        <div id="userProfile" class="user-profile hidden">
+          <span id="merchantName" class="merchant-name">Apex Athletics</span>
+          <button id="btnLogout" class="btn-logout" title="Sign Out">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- 1. Voice / Mic Control Section -->
+      <section class="voice-section">
+        <div class="voice-header-row">
+          <div class="voice-title-wrap">
+            <span class="section-title">Voice Condition</span>
+            <span id="voiceStatusBadge" class="status-pill muted">Muted</span>
+          </div>
+          <button id="btnGrantMic" class="btn-ghost-sm hidden" title="Grant microphone permission in browser">
+            🎙️ Enable Mic Access
+          </button>
+        </div>
+
+        <!-- Mute / Unmute Button -->
+        <div class="mic-toggle-container">
+          <button id="btnToggleMute" class="btn-mute-toggle muted" title="Toggle microphone">
+            <span id="micIcon" class="mic-toggle-icon">🎙️</span>
+            <span id="micToggleText" class="mic-toggle-text">Unmute (Speak Condition)</span>
+          </button>
+          <div id="voiceStatusText" class="voice-status-text">
+            Speak your condition (e.g., "Shoes under 4000"). Click Mute when finished.
+          </div>
+        </div>
+
+        <!-- Live Voice Transcript Box -->
+        <div class="transcript-wrapper">
+          <div class="transcript-header">
+            <span class="transcript-label">Spoken Condition</span>
+            <button id="btnClearTranscript" class="btn-clear-text" title="Clear transcript">Clear</button>
+          </div>
+          <textarea
+            id="transcriptInput"
+            class="transcript-textarea"
+            placeholder='State your requirement, e.g. "Buy runners under ₹4,000" or "Socks under ₹1,000"...'
+            rows="2"
+          ></textarea>
+          <div id="interimDisplay" class="interim-text"></div>
+        </div>
+
+        <!-- Process Initiation Button -->
+        <button id="btnStartProcess" class="btn-primary-action w-full" disabled>
+          ⚡ Find Matching In-Stock Options
+        </button>
+
+        <!-- Quick Voice Intent Chips -->
+        <div class="voice-chips">
+          <button class="chip" data-command="Running shoes under ₹4,000">"Runners under ₹4,000"</button>
+          <button class="chip" data-command="Performance socks under ₹1,000">"Socks under ₹1,000"</button>
+          <button class="chip" data-command="Water bottle under ₹1,500">"Bottle under ₹1,500"</button>
+        </div>
+      </section>
+
+      <!-- 2. Detected / Active Product Card (with complete details) -->
+      <section class="product-section">
+        <div class="section-title flex justify-between items-center">
+          <span>Active Product Detail</span>
+          <span id="productStock" class="stock-tag">● In Stock (35 available)</span>
+        </div>
+        <div id="productCard" class="product-card">
+          <div class="product-info">
+            <h3 id="productTitle" class="product-title">CloudStrider Carbon Runner (Stealth Black / UK 9)</h3>
+            <p id="productDesc" class="product-desc">Next-generation ultralight carbon-plated marathon road racing shoe.</p>
+            <div class="product-meta mt-2">
+              <span id="productSku" class="sku-tag">CS-BLK-09</span>
+              <span id="productPrice" class="price-tag">₹3,499.00</span>
+            </div>
+          </div>
+          <button id="btnQuickCheckout" class="btn-primary w-full mt-3">
+            ⚡ Buy Active Item (1-Click Checkout)
+          </button>
+        </div>
+      </section>
+
+      <!-- 3. Multiple In-Stock Options (Matching user condition) -->
+      <section id="optionsSection" class="options-section hidden">
+        <div class="options-header">
+          <span class="section-title">In-Stock Options Matching Condition</span>
+          <span id="optionsCount" class="options-count">5 Available</span>
+        </div>
+        <div id="optionsList" class="options-list">
+          <!-- Populated dynamically via /buyer/options -->
+        </div>
+      </section>
+
+      <!-- 4. AI Analysis Result Card -->
+      <section id="analysisSection" class="analysis-section hidden">
+        <div class="section-title">Groq LLM Buyer Analysis</div>
+        <div id="decisionCard" class="decision-card buy">
+          <div class="decision-header">
+            <span id="decisionBadge" class="decision-badge">BUY APPROVED</span>
+            <span id="confidenceScore" class="confidence-score">96% Confidence</span>
+          </div>
+          <p id="decisionReason" class="decision-reason">
+            Evaluating product against your condition and inventory policies...
+          </p>
+        </div>
+
+        <button id="btnExecuteCheckout" class="btn-primary w-full mt-2">
+          ⚡ Execute Autonomous Checkout
+        </button>
+      </section>
+
+      <!-- 5. Checkout Ready & Payment Section -->
+      <section id="receiptSection" class="receipt-section hidden">
+        <div class="receipt-card">
+          <div class="receipt-icon">💳</div>
+          <div class="receipt-title">Checkout Option Created!</div>
+          <p class="receipt-subtitle">Inventory reserved. Choose payment option below:</p>
+          <div class="receipt-details">
+            <div class="receipt-row">
+              <span>Selected Item:</span>
+              <strong id="receiptItemName" class="text-right">CloudStrider Carbon Runner</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Order ID:</span>
+              <strong id="receiptOrderId" class="font-mono">#ord_...</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Total Due:</span>
+              <strong id="receiptAmount">₹3,499.00</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Razorpay Order:</span>
+              <strong id="receiptRzpId" class="font-mono">order_...</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Status:</span>
+              <strong style="color: #34d399;">Stock Reserved</strong>
+            </div>
+          </div>
+          <button id="btnOpenPayment" class="btn-primary w-full mt-2">
+            💳 Pay with Razorpay Checkout
+          </button>
+          <button id="btnInstantSettle" class="btn-secondary w-full mt-2" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+            ⚡ Instant Settle (Demo)
+          </button>
+          <button id="btnViewInDashboard" class="btn-secondary w-full mt-2">
+            View Order in CommerceOS
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Powered by Groq LPUs & Razorpay</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

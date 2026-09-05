@@ -19,6 +19,8 @@ import createOrderRoute from "./routes/orders/create";
 import cancelOrderRoute from "./routes/orders/cancel";
 import createPaymentRoute from "./routes/orders/payment";
 import verifyPaymentRoute from "./routes/orders/verify-payment";
+import { listOrdersRoute } from "./routes/orders/list";
+import { getOrderRoute } from "./routes/orders/get";
 import cors from "@fastify/cors";
 import rawBody from "fastify-raw-body";
 import razorpayWebhookRoute from "./routes/webhooks/razorpay";
@@ -81,6 +83,8 @@ export function buildApp() {
 
   app.register(createOrderRoute);
   app.register(cancelOrderRoute);
+  app.register(listOrdersRoute);
+  app.register(getOrderRoute);
 
   app.register(createPaymentRoute);
   app.register(verifyPaymentRoute);

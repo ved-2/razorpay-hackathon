@@ -123,8 +123,8 @@ async function main() {
 
   await prisma.inventory.upsert({
     where: { variantId: varStealthBlack.id },
-    update: { quantity: 2, reserved: 0 },
-    create: { variantId: varStealthBlack.id, quantity: 2, reserved: 0 },
+    update: { quantity: 35, reserved: 0 },
+    create: { variantId: varStealthBlack.id, quantity: 35, reserved: 0 },
   });
 
   // Variant 1B: Volt Orange UK 10 -> HIGH VELOCITY (quantity = 40)

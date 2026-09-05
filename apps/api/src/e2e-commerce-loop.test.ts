@@ -326,5 +326,5 @@ describe("End-to-End Autonomous Commerce Loop", () => {
     const agentEvents = auditEvents.filter((e: any) => e.actorType === "AI_AGENT");
     expect(agentEvents.length).toBeGreaterThanOrEqual(1);
     expect(agentEvents.some((e: any) => e.action === "ORDER_CREATED")).toBe(true);
-  });
+  }, 30000);
 });

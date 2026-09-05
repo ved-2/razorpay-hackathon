@@ -156,7 +156,7 @@ describe("AI Proposal API (POST /ai/opportunities/:id/propose)", () => {
     // Context should be captured
     expect(body.context).toBeDefined();
     expect(body.context.storeOverview).toBeDefined();
-  });
+  }, 20000);
 
   it("enforces tenant isolation: Merchant B cannot propose on Merchant A's opportunity", async () => {
     const merchantA = await registerMerchant(

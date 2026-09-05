@@ -35,7 +35,7 @@ export async function buyerEvaluateRoute(app: FastifyInstance) {
 
     const { product, policy } = parsed.data;
 
-    const evaluation = evaluateBuyerDecision(product, policy);
+    const evaluation = await evaluateBuyerDecision(product, policy);
 
     return reply.send({
       evaluation,

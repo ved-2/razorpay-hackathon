@@ -17,6 +17,7 @@ const envSchema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
 
   JWT_SECRET: z.string().min(32),
+  GROQ_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -27,8 +28,8 @@ export const env = envSchema.parse({
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
   RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
-  
 
   JWT_SECRET: process.env.JWT_SECRET,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
 });
 

@@ -1,35 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-declare global {
-  interface Window {
-    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
-  }
-}
-
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  handler: (response: RazorpayResponse) => void;
-  theme?: {
-    color?: string;
-  };
-}
-
-interface RazorpayResponse {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-}
-
-interface RazorpayInstance {
-  open(): void;
-}
+import { RazorpayResponse, RazorpayOptions } from "@/types/razorpay";
 
 const API_URL = "http://localhost:4000";
 
@@ -111,7 +83,7 @@ export default function PaymentTestPage() {
         description: "CommerceOS Test Payment",
         order_id: payment.providerOrderId,
 
-        handler: async (response) => {
+        handler: async (response: RazorpayResponse) => {
           try {
             setMessage("Payment completed. Verifying...");
 

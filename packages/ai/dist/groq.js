@@ -9,7 +9,12 @@ exports.generateDeterministicProposal = generateDeterministicProposal;
 exports.queryGroqForProposal = queryGroqForProposal;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const schema_js_1 = require("./schema.js");
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+const DEFAULT_MODELS = [
+    process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "groq/compound",
+    "llama-3.3-70b-versatile",
+];
 function createGroqClient(apiKey) {
     const key = apiKey || process.env.GROQ_API_KEY;
     if (!key) {
@@ -115,40 +120,43 @@ function generateDeterministicProposal(opportunity, context) {
             };
     }
 }
-async function queryGroqForProposal(opportunity, context, apiKey, model = DEFAULT_MODEL) {
+async function queryGroqForProposal(opportunity, context, apiKey, model) {
     const client = createGroqClient(apiKey);
     if (!client) {
         return generateDeterministicProposal(opportunity, context);
     }
-    try {
-        const prompt = buildOpportunityPrompt(opportunity, context);
-        const completion = await client.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a structured AI agent that strictly returns valid JSON without markdown fences or additional text.",
-                },
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-            model,
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-        });
-        const content = completion.choices[0]?.message?.content?.trim();
-        if (!content) {
-            return generateDeterministicProposal(opportunity, context);
+    const prompt = buildOpportunityPrompt(opportunity, context);
+    const modelsToTry = model ? [model, ...DEFAULT_MODELS] : DEFAULT_MODELS;
+    for (const targetModel of modelsToTry) {
+        try {
+            const completion = await client.chat.completions.create({
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a structured AI agent that strictly returns valid JSON without markdown fences or additional text.",
+                    },
+                    {
+                        role: "user",
+                        content: prompt,
+                    },
+                ],
+                model: targetModel,
+                temperature: 0.2,
+                response_format: { type: "json_object" },
+                max_tokens: 800,
+            });
+            const content = completion.choices[0]?.message?.content?.trim();
+            if (!content)
+                continue;
+            const parsed = JSON.parse(content);
+            const validated = schema_js_1.aiProposalSchema.safeParse(parsed);
+            if (validated.success) {
+                return validated.data;
+            }
         }
-        const parsed = JSON.parse(content);
-        const validated = schema_js_1.aiProposalSchema.safeParse(parsed);
-        if (!validated.success) {
-            return generateDeterministicProposal(opportunity, context);
+        catch {
+            continue;
         }
-        return validated.data;
     }
-    catch {
-        return generateDeterministicProposal(opportunity, context);
-    }
+    return generateDeterministicProposal(opportunity, context);
 }

@@ -3,7 +3,12 @@ import { RevenueOpportunity } from "@commerceos/domain";
 import { OpportunityContext } from "./state.js";
 import { AIProposal, aiProposalSchema } from "./schema.js";
 
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+const DEFAULT_MODELS = [
+  process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "groq/compound",
+  "llama-3.3-70b-versatile",
+];
 
 export function createGroqClient(apiKey?: string): Groq | null {
   const key = apiKey || process.env.GROQ_API_KEY;
@@ -130,7 +135,7 @@ export async function queryGroqForProposal(
   opportunity: RevenueOpportunity,
   context?: OpportunityContext,
   apiKey?: string,
-  model = DEFAULT_MODEL
+  model?: string
 ): Promise<AIProposal> {
   const client = createGroqClient(apiKey);
 
@@ -138,40 +143,42 @@ export async function queryGroqForProposal(
     return generateDeterministicProposal(opportunity, context);
   }
 
-  try {
-    const prompt = buildOpportunityPrompt(opportunity, context);
+  const prompt = buildOpportunityPrompt(opportunity, context);
+  const modelsToTry = model ? [model, ...DEFAULT_MODELS] : DEFAULT_MODELS;
 
-    const completion = await client.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a structured AI agent that strictly returns valid JSON without markdown fences or additional text.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      model,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    });
+  for (const targetModel of modelsToTry) {
+    try {
+      const completion = await client.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a structured AI agent that strictly returns valid JSON without markdown fences or additional text.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        model: targetModel,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        max_tokens: 800,
+      });
 
-    const content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
-      return generateDeterministicProposal(opportunity, context);
+      const content = completion.choices[0]?.message?.content?.trim();
+      if (!content) continue;
+
+      const parsed = JSON.parse(content);
+      const validated = aiProposalSchema.safeParse(parsed);
+
+      if (validated.success) {
+        return validated.data;
+      }
+    } catch {
+      continue;
     }
-
-    const parsed = JSON.parse(content);
-    const validated = aiProposalSchema.safeParse(parsed);
-
-    if (!validated.success) {
-      return generateDeterministicProposal(opportunity, context);
-    }
-
-    return validated.data;
-  } catch {
-    return generateDeterministicProposal(opportunity, context);
   }
+
+  return generateDeterministicProposal(opportunity, context);
 }
